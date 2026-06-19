@@ -8,49 +8,61 @@
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&display=swap" rel="stylesheet">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; font-family: sans-serif; }
-        #container { width: 100vw; height: 100vh; position: relative; }
-        
-        #ui-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        #container { width: 100vw; height: 100vh; height: 100dvh; position: relative; }
+
+        /* Layer 1: the heart graphic + initials + photo. Always full-screen and centered,
+           independent of how tall the subtitle/footer end up being. */
+        #heart-overlay {
+            position: fixed; inset: 0;
             pointer-events: none; z-index: 10;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
             perspective: 1200px;
-            padding-bottom: calc(110px + env(safe-area-inset-bottom, 0));
         }
-        
+
         #initials {
-            font-family: 'Dancing Script', cursive; 
+            font-family: 'Dancing Script', cursive;
             color: #ffd700;
             text-shadow: 0 0 20px rgba(255, 102, 153, 0.8), 0 0 40px rgba(255, 0, 68, 0.8);
-            margin: 0; padding: 0; 
-            position: absolute; 
+            margin: 0; padding: 0;
+            position: absolute;
             top: 50%; left: 50%;
-            font-size: min(8vw, 8vh); 
+            font-size: min(8vw, 8vh);
             transform: translate(-50%, -50%) scale(0.5) rotateY(0deg);
             transform-origin: center center;
             opacity: 0;
             white-space: nowrap;
-            backface-visibility: hidden; 
+            backface-visibility: hidden;
         }
-        
+
         #profile-photo {
             position: absolute; left: 50%; top: 50%;
             transform: translate(-50%, -50%) scale(0);
-            width: min(30vw, 30vh); 
+            width: min(30vw, 30vh);
             height: min(30vw, 30vh);
             border-radius: 50%; object-fit: cover;
             box-shadow: 0 0 40px rgba(255, 102, 153, 0.6), 0 0 80px rgba(255, 0, 68, 0.4);
             border: 4px solid rgba(255, 215, 0, 0.5);
-            opacity: 0; pointer-events: none; z-index: 11;
+            opacity: 0;
         }
-        
+
+        /* Layer 2: the bottom-docked stack (subtitle + footer). This is a real flex
+           column anchored to the viewport bottom, so the footer can never be pushed
+           off-screen and the subtitle can never be hidden behind it — the browser's
+           layout engine keeps them stacked correctly no matter the text length or
+           screen size. */
+        #bottom-stack {
+            position: fixed;
+            left: 0; right: 0; bottom: 0;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+
         #subtitle {
-            position: absolute;
-            bottom: clamp(10%, 11vh, 16%);
-            left: 50%;
-            transform: translateX(-50%);
+            order: 1;
             font-family: 'Great Vibes', cursive;
-            font-size: clamp(1.2rem, 4vw, 2.2rem);
+            font-size: clamp(1.1rem, 4vw, 2.2rem);
             color: #fff;
             text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
             opacity: 0;
@@ -58,27 +70,27 @@
             width: 90%;
             max-width: 850px;
             line-height: 1.6;
-            white-space: normal;
-            padding-bottom: 0;
+            margin: 0 auto 18px auto;
             overflow-wrap: break-word;
-            z-index: 21;
-            max-height: calc(100vh - 260px);
+            /* Safety valve: if the text is unusually long, it scrolls internally
+               instead of growing tall enough to push the footer off-screen or
+               creep up over the heart graphic. */
+            max-height: 42dvh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            pointer-events: auto;
         }
 
         #footer-container {
-            position: fixed;
-            bottom: env(safe-area-inset-bottom, 0);
-            left: 0;
-            right: 0;
+            order: 2;
             width: 100%;
-            padding: calc(8px + env(safe-area-inset-bottom, 0)) 0 10px 0;
+            padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0)) 0;
             text-align: center;
             background: linear-gradient(90deg, #0b3060, #1a548f, #cda80d);
             opacity: 0;
             transform: translateY(20px);
             pointer-events: auto;
             box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.8);
-            z-index: 20;
         }
         #footer-text {
             font-family: 'Georgia', serif;
@@ -97,32 +109,34 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
-        @media (max-width: 600px) { 
-            #initials { font-size: min(12vw, 12vh); } 
+
+        @media (max-width: 600px) {
+            #initials { font-size: min(12vw, 12vh); }
             #profile-photo { width: min(35vw, 35vh); height: min(35vw, 35vh); }
-            #subtitle { 
-                width: 94%; 
-                bottom: calc(18% + env(safe-area-inset-bottom, 0));
-                font-size: clamp(1.2rem, 4vw, 1.9rem);
+            #subtitle {
+                width: 94%;
+                font-size: clamp(1.1rem, 4vw, 1.9rem);
                 line-height: 1.8;
+                max-height: 46dvh;
             }
             #footer-text { font-size: 0.8rem; }
             #footer-caption { font-size: 0.65rem; }
-            #footer-container { padding: 4px 0 6px 0; }
+            #footer-container { padding: 6px 0 calc(8px + env(safe-area-inset-bottom, 0)) 0; }
         }
     </style>
 </head>
 <body>
     <div id="container">
-        <div id="ui-overlay">
+        <div id="heart-overlay">
             <div id="initials">T.W.G</div>
             <img id="profile-photo" src="beb.jpeg" alt="Profile Photo">
-            <div id="subtitle">You walked into my life like sunrise after a long night, and ever since, every part of my world has carried a softer glow, a deeper warmth, and a love that feels like home.</div>
         </div>
-        <div id="footer-container">
-            <div id="footer-text">Made with Love by The Arashian.</div>
-            <div id="footer-caption">Stay dangerous, Stay Invisible</div>
+        <div id="bottom-stack">
+            <div id="subtitle">You walked into my life like sunrise after a long night, and ever since, every part of my world has carried a softer glow, a deeper warmth, and a love that feels like home.</div>
+            <div id="footer-container">
+                <div id="footer-text">Made with Love by The Arashian.</div>
+                <div id="footer-caption">Stay dangerous, Stay Invisible</div>
+            </div>
         </div>
     </div>
 
@@ -156,16 +170,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        const footer = document.getElementById('footer-container');
-        const subtitle = document.getElementById('subtitle');
-
-        function updateLayout() {
-            const footerHeight = footer.offsetHeight || 80;
-            subtitle.style.bottom = `${footerHeight + 20}px`;
-        }
-
         updateCamera();
-        updateLayout();
 
         // 2. Particle Texture
         const canvas = document.createElement('canvas'); canvas.width = 32; canvas.height = 32;
@@ -179,7 +184,7 @@
 
         // 3. Generate the Heart Particles
         const numParticles = 1200;
-        
+
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(numParticles * 3);
         const colors = new Float32Array(numParticles * 3);
@@ -241,15 +246,15 @@
         }, "+=0.5");
 
         // Phase 3: Prepare for the Spin
-        tl.add("spinStart", "+=1.5"); 
+        tl.add("spinStart", "+=1.5");
 
-        const rotationsToStop = 8 * Math.PI; 
-        const spinDuration = 16; 
+        const rotationsToStop = 8 * Math.PI;
+        const spinDuration = 16;
 
         tl.to(particleSystem.rotation, {
-            y: `+=${rotationsToStop}`, 
-            duration: spinDuration, 
-            ease: "power2.out" 
+            y: `+=${rotationsToStop}`,
+            duration: spinDuration,
+            ease: "power2.out"
         }, "spinStart");
 
         tl.to('#initials', {
@@ -261,7 +266,7 @@
         }, "spinStart");
 
         tl.set('#initials', { opacity: 0 }, "spinStart+=2");
-        
+
         tl.to('#profile-photo', {
             opacity: 1, scale: 1, duration: 1.2, ease: "back.out(1.7)"
         }, "spinStart+=2.05");
@@ -275,16 +280,16 @@
         function animate() {
             requestAnimationFrame(animate);
             time += 0.005;
-            particleSystem.position.y = Math.sin(time) * 5; 
+            particleSystem.position.y = Math.sin(time) * 5;
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- CRITICAL: Resize listener to fix mobile layout dynamically ---
+        // --- Resize listener: only the WebGL canvas/camera need recalculating now.
+        // The footer/subtitle layout is pure CSS flexbox, so it self-adjusts. ---
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
             updateCamera();
-            updateLayout();
         });
     </script>
 </body>
