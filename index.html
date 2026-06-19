@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>For a Special One</title>
+    <meta name="description" content="A romantic heart animation dedicated to someone special.">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; font-family: sans-serif; }
+        #container { width: 100vw; height: 100vh; position: relative; }
+        
+        #ui-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            perspective: 1200px; 
+        }
+        
+        #initials {
+            font-family: 'Dancing Script', cursive; 
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 102, 153, 0.8), 0 0 40px rgba(255, 0, 68, 0.8);
+            margin: 0; padding: 0; 
+            position: absolute; 
+            top: 50%; left: 50%;
+            font-size: min(8vw, 8vh); 
+            transform: translate(-50%, -50%) scale(0.5) rotateY(0deg);
+            transform-origin: center center;
+            opacity: 0;
+            white-space: nowrap;
+            backface-visibility: hidden; 
+        }
+        
+        #profile-photo {
+            position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: min(30vw, 30vh); 
+            height: min(30vw, 30vh);
+            border-radius: 50%; object-fit: cover;
+            box-shadow: 0 0 40px rgba(255, 102, 153, 0.6), 0 0 80px rgba(255, 0, 68, 0.4);
+            border: 4px solid rgba(255, 215, 0, 0.5);
+            opacity: 0; pointer-events: none; z-index: 11;
+        }
+        
+        #subtitle {
+            position: absolute;
+            bottom: clamp(10%, 11vh, 16%);
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(1.2rem, 4vw, 2.2rem);
+            color: #fff;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+            opacity: 0;
+            text-align: center;
+            width: 90%;
+            max-width: 850px;
+            line-height: 1.6;
+            white-space: normal;
+            padding-bottom: 0;
+            z-index: 21;
+        }
+
+        #footer-container {
+            position: fixed;
+            bottom: env(safe-area-inset-bottom, 0);
+            left: 0;
+            right: 0;
+            width: 100%;
+            padding: calc(8px + env(safe-area-inset-bottom, 0)) 0 10px 0;
+            text-align: center;
+            background: linear-gradient(90deg, #0b3060, #1a548f, #cda80d);
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: auto;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.8);
+            z-index: 20;
+        }
+        #footer-text {
+            font-family: 'Georgia', serif;
+            font-size: 1.1rem;
+            color: #ffffff;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        #footer-caption {
+            font-family: 'Arial', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #ff5f6d, #ffc371);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        @media (max-width: 600px) { 
+            #initials { font-size: min(12vw, 12vh); } 
+            #profile-photo { width: min(35vw, 35vh); height: min(35vw, 35vh); }
+            #subtitle { 
+                width: 94%; 
+                bottom: 12%;
+                font-size: clamp(1.3rem, 4.5vw, 2rem);
+                line-height: 1.7;
+            }
+            #footer-text { font-size: 0.8rem; }
+            #footer-caption { font-size: 0.65rem; }
+            #footer-container { padding: 4px 0 6px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="ui-overlay">
+            <div id="initials">T.W.G</div>
+            <img id="profile-photo" src="beb.jpeg" alt="Profile Photo">
+            <div id="subtitle">You walked into my life like sunrise after a long night, and ever since, every part of my world has carried a softer glow, a deeper warmth, and a love that feels like home.</div>
+        </div>
+        <div id="footer-container">
+            <div id="footer-text">Made with Love by The Arashian.</div>
+            <div id="footer-caption">Stay dangerous, Stay Invisible</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+
+    <script>
+        // 1. Setup Scene
+        const container = document.getElementById('container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+
+        const scale = window.innerWidth < 600 ? 16 : 22;
+        const heartWidth = 32 * scale;
+        const heartHeight = 34 * scale;
+
+        function updateCamera() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            const vFov = THREE.MathUtils.degToRad(camera.fov);
+            const requiredVertical = Math.max(heartHeight, heartWidth / camera.aspect) * 1.1;
+            const requiredDistance = requiredVertical / (2 * Math.tan(vFov / 2));
+            camera.position.z = Math.max(requiredDistance, 600);
+            camera.lookAt(0, 0, 0);
+        }
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 1);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        updateCamera();
+
+        // 2. Particle Texture
+        const canvas = document.createElement('canvas'); canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 14);
+        gradient.addColorStop(0, 'rgba(255,255,255,1)');
+        gradient.addColorStop(0.4, 'rgba(255,150,150,1)');
+        gradient.addColorStop(1, 'rgba(255,0,0,0)');
+        ctx.fillStyle = gradient; ctx.fillRect(0, 0, 32, 32);
+        const particleTexture = new THREE.CanvasTexture(canvas);
+
+        // 3. Generate the Heart Particles
+        const numParticles = 1200;
+        
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(numParticles * 3);
+        const colors = new Float32Array(numParticles * 3);
+        const particleData = [];
+
+        for (let i = 0; i < numParticles; i++) {
+            const t = (i / numParticles) * Math.PI * 2;
+            const targetX = 16 * Math.pow(Math.sin(t), 3) * scale;
+            const targetY = (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * scale;
+            const targetZ = (Math.random() - 0.5) * 30;
+
+            const randX = (Math.random() - 0.5) * 1200;
+            const randY = (Math.random() - 0.5) * 1200;
+            const randZ = (Math.random() - 0.5) * 1200;
+
+            positions[i*3] = randX; positions[i*3+1] = randY; positions[i*3+2] = randZ;
+            particleData.push({ x: randX, y: randY, z: randZ, targetX, targetY, targetZ });
+            colors[i*3] = 1; colors[i*3+1] = 0.4 + Math.random() * 0.6; colors[i*3+2] = 0.6 + Math.random() * 0.4;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Slightly smaller particles on mobile to prevent crowding
+        const particleSize = window.innerWidth < 600 ? 3.5 : 6;
+
+        const material = new THREE.PointsMaterial({
+            size: particleSize, map: particleTexture, blending: THREE.AdditiveBlending,
+            depthWrite: false, transparent: true, vertexColors: true, sizeAttenuation: true
+        });
+        const particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
+
+        // 4. The Perfectly Synced Timeline
+        const tl = gsap.timeline({ delay: 0.5 });
+
+        // Phase 1: Heart gathers
+        tl.to(particleData, {
+            x: (i) => particleData[i].targetX,
+            y: (i) => particleData[i].targetY,
+            z: (i) => particleData[i].targetZ,
+            duration: 4,
+            stagger: { from: "edges", amount: 1.5 },
+            ease: "power4.inOut",
+            onUpdate: () => {
+                const posAttr = particleSystem.geometry.attributes.position;
+                const array = posAttr.array;
+                particleData.forEach((p, i) => {
+                    const i3 = i * 3;
+                    array[i3] = p.x; array[i3+1] = p.y; array[i3+2] = p.z;
+                });
+                posAttr.needsUpdate = true;
+            }
+        });
+
+        // Phase 2: Initials Appear
+        tl.to('#initials', {
+            opacity: 1, scale: 1, duration: 1.5, ease: "back.out(1.7)"
+        }, "+=0.5");
+
+        // Phase 3: Prepare for the Spin
+        tl.add("spinStart", "+=1.5"); 
+
+        const rotationsToStop = 8 * Math.PI; 
+        const spinDuration = 16; 
+
+        tl.to(particleSystem.rotation, {
+            y: `+=${rotationsToStop}`, 
+            duration: spinDuration, 
+            ease: "power2.out" 
+        }, "spinStart");
+
+        tl.to('#initials', {
+            rotateY: 180, duration: 2, ease: "none"
+        }, "spinStart");
+
+        tl.to('#subtitle', {
+            opacity: 1, y: 0, duration: 2, ease: "power2.out"
+        }, "spinStart");
+
+        tl.set('#initials', { opacity: 0 }, "spinStart+=2");
+        
+        tl.to('#profile-photo', {
+            opacity: 1, scale: 1, duration: 1.2, ease: "back.out(1.7)"
+        }, "spinStart+=2.05");
+
+        tl.to('#footer-container', {
+            opacity: 1, y: 0, duration: 1.5, ease: "power2.out"
+        }, "spinStart+=3.5");
+
+        // 5. Gentle Floating Animation Loop
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.005;
+            particleSystem.position.y = Math.sin(time) * 5; 
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- CRITICAL: Resize listener to fix mobile layout dynamically ---
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            updateCamera();
+        });
+    </script>
+</body>
+</html>
