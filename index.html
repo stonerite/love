@@ -100,9 +100,9 @@
             #profile-photo { width: min(35vw, 35vh); height: min(35vw, 35vh); }
             #subtitle { 
                 width: 94%; 
-                bottom: 12%;
-                font-size: clamp(1.3rem, 4.5vw, 2rem);
-                line-height: 1.7;
+                bottom: calc(18% + env(safe-area-inset-bottom, 0));
+                font-size: clamp(1.2rem, 4vw, 1.9rem);
+                line-height: 1.8;
             }
             #footer-text { font-size: 0.8rem; }
             #footer-caption { font-size: 0.65rem; }
