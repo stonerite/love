@@ -194,7 +194,7 @@
     <div id="tap-overlay">
         <div id="tap-heart">💛</div>
         <div id="tap-text">Tap to Begin</div>
-        <div id="tap-subtext">Experience Love</div>
+        <div id="tap-subtext">turn your sound on</div>
     </div>
     <div id="container">
         <div id="heart-overlay">
@@ -250,9 +250,9 @@
         let experienceStarted = false;
 
         function startExperience(e) {
+            if (e) e.stopPropagation();
             if (experienceStarted) return;
             experienceStarted = true;
-            if (e) e.stopPropagation();
 
             // "Prime" the audio element during this gesture so the later,
             // script-triggered play() (when the photo appears) is allowed.
