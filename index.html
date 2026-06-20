@@ -194,7 +194,7 @@
     <div id="tap-overlay">
         <div id="tap-heart">💛</div>
         <div id="tap-text">Tap to Begin</div>
-        <div id="tap-subtext">turn your sound on</div>
+        <div id="tap-subtext">Experience Love</div>
     </div>
     <div id="container">
         <div id="heart-overlay">
@@ -248,17 +248,14 @@
         // which also doubles as the user gesture that unlocks audio playback.
         const tapOverlay = document.getElementById('tap-overlay');
         let experienceStarted = false;
-        let ignoreNextToggle = false;
 
         function startExperience(e) {
             if (e) {
-                e.preventDefault();
+                if (e.type === 'touchend') e.preventDefault();
                 e.stopPropagation();
             }
             if (experienceStarted) return;
             experienceStarted = true;
-            ignoreNextToggle = true;
-            setTimeout(() => { ignoreNextToggle = false; }, 500);
 
             // "Prime" the audio element during this gesture so the later,
             // script-triggered play() (when the photo appears) is allowed.
@@ -274,14 +271,14 @@
         }
 
         tapOverlay.addEventListener('click', startExperience);
-        tapOverlay.addEventListener('touchstart', startExperience, { passive: true });
+        tapOverlay.addEventListener('touchend', startExperience, { passive: false });
 
         // Tap anywhere (once started) to pause/resume the animation and song.
         const pauseIndicator = document.getElementById('pause-indicator');
         let isPaused = false;
 
         function togglePause() {
-            if (!experienceStarted || ignoreNextToggle) return;
+            if (!experienceStarted) return;
             isPaused = !isPaused;
             if (isPaused) {
                 tl.pause();
@@ -295,7 +292,7 @@
         }
 
         document.addEventListener('click', togglePause);
-        document.addEventListener('touchstart', togglePause, { passive: true });
+        document.addEventListener('touchend', togglePause, { passive: true });
 
         // 1. Setup Scene
         const container = document.getElementById('container');
