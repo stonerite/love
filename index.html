@@ -248,11 +248,17 @@
         // which also doubles as the user gesture that unlocks audio playback.
         const tapOverlay = document.getElementById('tap-overlay');
         let experienceStarted = false;
+        let ignoreNextToggle = false;
 
         function startExperience(e) {
-            if (e) e.stopPropagation();
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             if (experienceStarted) return;
             experienceStarted = true;
+            ignoreNextToggle = true;
+            setTimeout(() => { ignoreNextToggle = false; }, 500);
 
             // "Prime" the audio element during this gesture so the later,
             // script-triggered play() (when the photo appears) is allowed.
@@ -275,7 +281,7 @@
         let isPaused = false;
 
         function togglePause() {
-            if (!experienceStarted) return;
+            if (!experienceStarted || ignoreNextToggle) return;
             isPaused = !isPaused;
             if (isPaused) {
                 tl.pause();
