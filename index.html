@@ -123,9 +123,53 @@
             #footer-caption { font-size: 0.65rem; }
             #footer-container { padding: 6px 0 calc(8px + env(safe-area-inset-bottom, 0)) 0; }
         }
+
+        #tap-overlay {
+            position: fixed; inset: 0;
+            background: #0a0a0a;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.8s ease;
+        }
+        #tap-overlay.hidden { opacity: 0; pointer-events: none; }
+        #tap-heart {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            animation: tap-pulse 1.8s ease-in-out infinite;
+            margin-bottom: 18px;
+        }
+        #tap-text {
+            font-family: 'Dancing Script', cursive;
+            color: #ffd700;
+            font-size: clamp(1.6rem, 6vw, 2.8rem);
+            text-shadow: 0 0 20px rgba(255, 102, 153, 0.8), 0 0 40px rgba(255, 0, 68, 0.6);
+            text-align: center;
+            padding: 0 20px;
+        }
+        #tap-subtext {
+            font-family: 'Great Vibes', cursive;
+            color: #fff;
+            font-size: clamp(1rem, 3.5vw, 1.3rem);
+            margin-top: 10px;
+            opacity: 0.75;
+            text-align: center;
+            padding: 0 20px;
+        }
+        @keyframes tap-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.12); opacity: 0.7; }
+        }
     </style>
 </head>
 <body>
+    <div id="tap-overlay">
+        <div id="tap-heart">💛</div>
+        <div id="tap-text">Tap to Begin</div>
+        <div id="tap-subtext">see love</div>
+    </div>
     <div id="container">
         <div id="heart-overlay">
             <div id="initials">T.W.G</div>
@@ -140,10 +184,60 @@
         </div>
     </div>
 
+    <audio id="bg-song" src="Vybz Kartel - She so Pretty  Sexy Bak Riddim.mp3" preload="auto" loop></audio>
+
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
 
     <script>
+        // 0. Background song — starts the moment the photo appears.
+        // Browsers block audio.play() until the user has interacted with the page,
+        // so we try right on cue, and if that's blocked we catch the very next
+        // tap/click/keypress anywhere on the page and start it then instead.
+        const song = document.getElementById('bg-song');
+        song.volume = 0;
+        let songShouldPlay = false;
+        let songStarted = false;
+
+        function tryPlaySong() {
+            if (songStarted || !songShouldPlay) return;
+            song.play().then(() => {
+                songStarted = true;
+                gsap.to(song, { volume: 1, duration: 2, ease: "power1.in" });
+            }).catch(() => {
+                // Still blocked — will retry on next user interaction.
+            });
+        }
+
+        ['click', 'touchstart', 'keydown'].forEach(evt => {
+            document.addEventListener(evt, tryPlaySong, { passive: true });
+        });
+
+        // Tap-to-begin gate: nothing animates or plays until the user taps,
+        // which also doubles as the user gesture that unlocks audio playback.
+        const tapOverlay = document.getElementById('tap-overlay');
+        let experienceStarted = false;
+
+        function startExperience() {
+            if (experienceStarted) return;
+            experienceStarted = true;
+
+            // "Prime" the audio element during this gesture so the later,
+            // script-triggered play() (when the photo appears) is allowed.
+            song.play().then(() => {
+                song.pause();
+                song.currentTime = 0;
+            }).catch(() => {});
+
+            tapOverlay.classList.add('hidden');
+            setTimeout(() => tapOverlay.remove(), 900);
+
+            tl.play();
+        }
+
+        tapOverlay.addEventListener('click', startExperience);
+        tapOverlay.addEventListener('touchstart', startExperience, { passive: true });
+
         // 1. Setup Scene
         const container = document.getElementById('container');
         const scene = new THREE.Scene();
@@ -219,7 +313,7 @@
         scene.add(particleSystem);
 
         // 4. The Perfectly Synced Timeline
-        const tl = gsap.timeline({ delay: 0.5 });
+        const tl = gsap.timeline({ delay: 0.5, paused: true });
 
         // Phase 1: Heart gathers
         tl.to(particleData, {
@@ -270,6 +364,11 @@
         tl.to('#profile-photo', {
             opacity: 1, scale: 1, duration: 1.2, ease: "back.out(1.7)"
         }, "spinStart+=2.05");
+
+        tl.call(() => {
+            songShouldPlay = true;
+            tryPlaySong();
+        }, [], "spinStart+=2.05");
 
         tl.to('#footer-container', {
             opacity: 1, y: 0, duration: 1.5, ease: "power2.out"
