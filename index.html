@@ -162,13 +162,39 @@
             0%, 100% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.12); opacity: 0.7; }
         }
+
+        #pause-indicator {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #pause-indicator.visible { opacity: 1; }
+        #pause-icon {
+            font-size: clamp(2.5rem, 10vw, 4.5rem);
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 102, 153, 0.7);
+        }
+        #pause-text {
+            font-family: 'Great Vibes', cursive;
+            color: #fff;
+            font-size: clamp(1rem, 3.5vw, 1.3rem);
+            margin-top: 8px;
+            opacity: 0.85;
+        }
     </style>
 </head>
 <body>
     <div id="tap-overlay">
         <div id="tap-heart">💛</div>
         <div id="tap-text">Tap to Begin</div>
-        <div id="tap-subtext">see love</div>
+        <div id="tap-subtext">Experience Love</div>
     </div>
     <div id="container">
         <div id="heart-overlay">
@@ -182,6 +208,11 @@
                 <div id="footer-caption">Stay dangerous, Stay Invisible</div>
             </div>
         </div>
+    </div>
+
+    <div id="pause-indicator">
+        <div id="pause-icon">⏸</div>
+        <div id="pause-text">Paused - tap to resume</div>
     </div>
 
     <audio id="bg-song" src="Vybz Kartel - She so Pretty  Sexy Bak Riddim.mp3" preload="auto" loop></audio>
@@ -218,9 +249,10 @@
         const tapOverlay = document.getElementById('tap-overlay');
         let experienceStarted = false;
 
-        function startExperience() {
+        function startExperience(e) {
             if (experienceStarted) return;
             experienceStarted = true;
+            if (e) e.stopPropagation();
 
             // "Prime" the audio element during this gesture so the later,
             // script-triggered play() (when the photo appears) is allowed.
@@ -237,6 +269,27 @@
 
         tapOverlay.addEventListener('click', startExperience);
         tapOverlay.addEventListener('touchstart', startExperience, { passive: true });
+
+        // Tap anywhere (once started) to pause/resume the animation and song.
+        const pauseIndicator = document.getElementById('pause-indicator');
+        let isPaused = false;
+
+        function togglePause() {
+            if (!experienceStarted) return;
+            isPaused = !isPaused;
+            if (isPaused) {
+                tl.pause();
+                if (songStarted) song.pause();
+                pauseIndicator.classList.add('visible');
+            } else {
+                tl.play();
+                if (songStarted) song.play().catch(() => {});
+                pauseIndicator.classList.remove('visible');
+            }
+        }
+
+        document.addEventListener('click', togglePause);
+        document.addEventListener('touchstart', togglePause, { passive: true });
 
         // 1. Setup Scene
         const container = document.getElementById('container');
